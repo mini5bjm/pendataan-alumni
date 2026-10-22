@@ -53,6 +53,27 @@
     .animate-fade {
       animation: fadeIn 0.25s ease-out forwards;
     }
+    /* Animasi Checkmark & Modal Sukses Simpan */
+    @keyframes checkmarkCircle {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes checkmarkDraw {
+      0% { stroke-dashoffset: 48; }
+      100% { stroke-dashoffset: 0; }
+    }
+    .animate-check-circle {
+      animation: checkmarkCircle 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .animate-check-path {
+      stroke-dasharray: 48;
+      stroke-dashoffset: 48;
+      animation: checkmarkDraw 0.45s 0.35s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+    .celebration-glow {
+      box-shadow: 0 0 50px rgba(16, 185, 129, 0.35);
+    }
     @media print {
       .no-print { display: none !important; }
       body { background: white !important; }
@@ -276,6 +297,24 @@
               <select id="selectSiswa" required onchange="onStudentSelectChange()" class="w-full px-3.5 py-3 text-sm font-medium bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
                 <option value="">-- Pilih Nama Siswa --</option>
               </select>
+
+              <!-- Preview Pas Foto Siswa (Read-only untuk Publik) -->
+              <div id="studentCardPreview" class="hidden mt-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200/90 items-center gap-3.5 transition-all">
+                <div class="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-emerald-400 shrink-0 bg-white flex items-center justify-center shadow-xs">
+                  <img id="formStudentPhotoPreview" src="" class="w-full h-full object-cover hidden" alt="Foto Siswa">
+                  <div id="formStudentPhotoPlaceholder" class="w-full h-full flex flex-col items-center justify-center text-slate-300 bg-slate-100">
+                    <i class="fas fa-user text-xl"></i>
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h5 id="formStudentNamePreview" class="font-bold text-slate-800 text-sm truncate"></h5>
+                    <span id="formStudentGenderBadge" class="text-[10px] font-bold px-1.5 py-0.5 rounded"></span>
+                  </div>
+                  <p id="formStudentSubPreview" class="text-xs text-slate-500 mt-0.5"></p>
+                </div>
+              </div>
+
               <div id="studentExistingAlert" class="hidden mt-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
                 <i class="fas fa-info-circle text-amber-600"></i>
                 <span id="existingSchoolInfo" class="font-medium"></span>
@@ -680,6 +719,7 @@
               <thead>
                 <tr class="bg-slate-100 text-slate-700 border-b border-slate-200 font-bold uppercase text-[11px] tracking-wider">
                   <th class="py-3 px-3 text-center w-10">No</th>
+                  <th class="py-3 px-2 text-center w-14">Foto</th>
                   <th class="py-3 px-3">ID Siswa</th>
                   <th class="py-3 px-4">Nama Lengkap Siswa</th>
                   <th class="py-3 px-2 text-center">L/P</th>
@@ -1038,9 +1078,9 @@
   </div>
 
   <!-- MODAL TAMBAH / EDIT MASTER SISWA (KHUSUS ADMIN) -->
-  <div id="addStudentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 no-print">
-    <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-100 overflow-hidden animate-fade">
-      <div class="bg-slate-800 p-4 text-white flex items-center justify-between">
+  <div id="addStudentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 no-print overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-100 overflow-hidden animate-fade my-auto">
+      <div class="bg-slate-900 p-4 text-white flex items-center justify-between">
         <h3 id="modalStudentTitle" class="font-bold text-sm flex items-center gap-2">
           <i class="fas fa-user-plus text-emerald-400"></i> Tambah Master Data Alumni
         </h3>
@@ -1050,6 +1090,35 @@
       </div>
       <form id="formMasterStudent" onsubmit="submitMasterStudent(event)" class="p-5 space-y-4">
         <input type="hidden" id="editIdSiswa" value="">
+        <input type="hidden" id="editStudentPhotoData" value="">
+
+        <!-- Upload Foto Siswa (Admin Only) -->
+        <div class="flex items-center gap-3.5 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+          <div class="relative group cursor-pointer shrink-0" onclick="document.getElementById('newStudentPhotoInput').click()" title="Klik untuk upload / ganti foto">
+            <div id="studentPhotoPreviewBox" class="w-16 h-16 rounded-2xl bg-white border-2 border-dashed border-emerald-400 flex items-center justify-center overflow-hidden shadow-inner">
+              <i id="studentPhotoPlaceholderIcon" class="fas fa-camera text-2xl text-emerald-500"></i>
+              <img id="studentPhotoImg" src="" class="w-full h-full object-cover hidden" alt="Foto Siswa">
+            </div>
+            <div class="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[11px] font-bold">
+              <i class="fas fa-camera"></i>
+            </div>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <span class="block text-xs font-bold text-slate-700">Pas Foto Siswa</span>
+            <span class="block text-[10px] text-slate-400 mt-0.5">Khusus Admin. Format JPG/PNG.</span>
+            <div class="flex items-center gap-2 mt-2">
+              <button type="button" onclick="document.getElementById('newStudentPhotoInput').click()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-xs cursor-pointer">
+                <i class="fas fa-upload"></i> Unggah
+              </button>
+              <button type="button" id="btnRemoveStudentPhoto" onclick="removeSelectedStudentPhoto()" class="hidden px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-[11px] font-bold transition cursor-pointer">
+                Hapus
+              </button>
+            </div>
+            <input type="file" id="newStudentPhotoInput" accept="image/*" class="hidden" onchange="handleStudentPhotoSelected(event)">
+          </div>
+        </div>
+
         <div>
           <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nama Lengkap Siswa</label>
           <input type="text" id="newStudentName" required placeholder="Contoh: AHMAD FAUZAN" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -1070,6 +1139,57 @@
           <button type="submit" id="btnSaveMasterStudent" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white">Simpan Siswa</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL CEPAT UPLOAD FOTO SISWA (KHUSUS ADMIN) -->
+  <div id="modalQuickUploadPhoto" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-100 overflow-hidden animate-fade">
+      <div class="bg-slate-900 p-4 text-white flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fas fa-camera text-emerald-400"></i> Pas Foto Siswa (Admin)
+        </h3>
+        <button onclick="closeQuickUploadPhoto()" class="text-slate-400 hover:text-white">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="p-6 text-center space-y-4">
+        <div>
+          <h4 id="quickPhotoStudentName" class="font-bold text-slate-800 text-base leading-snug">-</h4>
+          <p id="quickPhotoStudentId" class="text-xs text-slate-400 font-mono mt-0.5">-</p>
+        </div>
+
+        <div class="relative w-28 h-28 mx-auto group cursor-pointer" onclick="document.getElementById('quickPhotoFileInput').click()" title="Klik untuk memilih foto dari galeri atau kamera">
+          <div id="quickPhotoContainer" class="w-28 h-28 rounded-2xl bg-slate-100 border-2 border-dashed border-emerald-400 flex items-center justify-center overflow-hidden shadow-inner">
+            <i id="quickPhotoIcon" class="fas fa-user text-4xl text-slate-300"></i>
+            <img id="quickPhotoImg" src="" class="w-full h-full object-cover hidden" alt="Foto Siswa">
+          </div>
+          <div class="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-xs font-bold">
+            <i class="fas fa-camera mr-1"></i> Ganti
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-500 max-w-xs mx-auto">
+          Foto otomatis dioptimasi dan disimpan langsung ke database Firestore.
+        </p>
+
+        <input type="file" id="quickPhotoFileInput" accept="image/*" class="hidden" onchange="handleQuickPhotoFileChange(event)">
+        <input type="hidden" id="quickPhotoTargetId" value="">
+        <input type="hidden" id="quickPhotoData" value="">
+
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" onclick="document.getElementById('quickPhotoFileInput').click()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition border border-slate-200 flex items-center justify-center gap-1.5 cursor-pointer">
+            <i class="fas fa-folder-open"></i> Pilih Berkas
+          </button>
+          <button type="button" id="btnQuickDeletePhoto" onclick="handleQuickPhotoDelete()" class="hidden py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-semibold transition cursor-pointer" title="Hapus Foto">
+            <i class="fas fa-trash"></i>
+          </button>
+          <button type="button" id="btnSaveQuickPhoto" onclick="saveQuickPhoto()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <i class="fas fa-save"></i> Simpan
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1367,6 +1487,130 @@ service cloud.firestore {
     </div>
   </div>
 
+  <!-- MODAL SUKSES TERSIMPAN (ANIMASI WALI MURID) -->
+  <div id="saveSuccessModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 hidden items-center justify-center p-4 no-print overflow-y-auto">
+    <!-- Canvas for Confetti Particle Animation -->
+    <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-10 w-full h-full"></canvas>
+
+    <div class="relative z-20 bg-white rounded-3xl max-w-md w-full shadow-2xl border-2 border-emerald-400/50 p-6 sm:p-8 text-center animate-fade celebration-glow my-auto">
+      
+      <!-- Animated Checkmark Icon with Ripple -->
+      <div class="relative w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+        <div class="absolute inset-0 rounded-full bg-emerald-100 animate-ping opacity-60"></div>
+        <div class="absolute -inset-2 rounded-full bg-emerald-200/40 animate-pulse"></div>
+
+        <div class="relative w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-xl animate-check-circle">
+          <svg class="w-11 h-11 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12" class="animate-check-path"></polyline>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Badge Sukses -->
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold uppercase tracking-wider mb-2">
+        <i class="fas fa-circle-check text-emerald-600"></i>
+        <span>Berhasil Disimpan Real-Time</span>
+      </div>
+
+      <!-- Headline -->
+      <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+        Alhamdulillah, Data Tersimpan!
+      </h2>
+      <p class="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-xs mx-auto">
+        Pilihan sekolah lanjutan alumni telah berhasil dicatat resmi ke dalam pangkalan data sekolah.
+      </p>
+
+      <!-- Ringkasan Data yang Disimpan (Kartu Rinci) -->
+      <div class="bg-gradient-to-br from-emerald-50/70 via-slate-50 to-teal-50/60 rounded-2xl p-4 my-5 border border-emerald-200/70 text-left space-y-2.5 shadow-inner">
+        <div class="flex items-center justify-between border-b border-emerald-100 pb-2">
+          <span class="text-[11px] font-bold uppercase text-slate-400">Nama Siswa / Alumni</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-600 text-white" id="successModalTaBadge">2025-2026</span>
+        </div>
+        <div class="font-extrabold text-slate-900 text-sm sm:text-base tracking-wide flex items-center gap-2" id="successModalNama">
+          -
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/50">
+          <div>
+            <span class="block text-[10px] font-bold text-slate-400 uppercase">Jenjang & Status</span>
+            <span class="font-bold text-xs text-slate-800 flex items-center gap-1.5 mt-0.5" id="successModalJenjang">
+              -
+            </span>
+          </div>
+          <div>
+            <span class="block text-[10px] font-bold text-slate-400 uppercase">Waktu Pencatatan</span>
+            <span class="font-semibold text-xs text-slate-600 mt-0.5 block" id="successModalWaktu">
+              -
+            </span>
+          </div>
+        </div>
+
+        <div class="pt-1 border-t border-slate-200/50">
+          <span class="block text-[10px] font-bold text-slate-400 uppercase">Sekolah / Pesantren Pilihan</span>
+          <div class="font-bold text-xs sm:text-sm text-emerald-800 mt-0.5 flex items-start gap-1.5" id="successModalSekolah">
+            <i class="fas fa-school text-emerald-600 mt-0.5 shrink-0"></i>
+            <span class="leading-snug">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pesan Ramah untuk Wali Murid -->
+      <div class="bg-slate-100/80 rounded-xl p-3 text-[11px] text-slate-600 flex items-center gap-2 text-left mb-5 border border-slate-200/60">
+        <i class="fas fa-info-circle text-emerald-600 text-base shrink-0"></i>
+        <span>Data ini dapat diperbarui sewaktu-waktu sebelum batas waktu penutupan berakhir.</span>
+      </div>
+
+      <!-- Tombol Aksi -->
+      <div class="flex flex-col sm:flex-row gap-2.5">
+        <button type="button" onclick="handleSuccessModalLihatStatus()" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+          <i class="fas fa-list-check"></i>
+          <span>Lihat Status di Daftar Alumni</span>
+        </button>
+        <button type="button" onclick="closeSaveSuccessModal()" class="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition border border-slate-200 cursor-pointer">
+          <span>Tutup / Selesai</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- OVERLAY ANIMASI LOGOUT / KELUAR DARI MODE ADMIN -->
+  <div id="logoutOverlay" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[70] hidden items-center justify-center p-4 no-print transition-opacity duration-300">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl animate-fade text-white">
+      
+      <!-- Animated Lock Icon with Glow -->
+      <div class="relative w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+        <div class="absolute inset-0 rounded-full bg-rose-500/25 animate-ping opacity-75"></div>
+        <div class="absolute -inset-1.5 rounded-full bg-rose-500/20 animate-pulse"></div>
+        <div class="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-rose-600 to-amber-500 flex items-center justify-center shadow-xl text-2xl">
+          <i id="logoutLockIcon" class="fas fa-lock text-white transition-transform duration-500"></i>
+        </div>
+      </div>
+
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30 text-[11px] font-bold uppercase tracking-wider mb-2">
+        <i class="fas fa-shield-halved text-xs"></i>
+        <span>Mengunci Sesi Administrator</span>
+      </div>
+
+      <h3 class="text-lg sm:text-xl font-bold text-white tracking-tight">
+        Keluar dari Mode Admin
+      </h3>
+      <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+        Menutup akses panel dan mengalihkan ke Portal Publik / Wali Murid...
+      </p>
+
+      <!-- Animated Progress Bar -->
+      <div class="w-full bg-slate-800 rounded-full h-2 mt-5 overflow-hidden border border-slate-700/60">
+        <div id="logoutProgressBar" class="bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+      </div>
+      
+      <div class="flex items-center justify-center gap-2 text-[10px] text-slate-400 mt-3">
+        <i class="fas fa-circle-notch fa-spin text-emerald-400"></i>
+        <span>Memulihkan tampilan publik...</span>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL KONFIRMASI -->
   <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 no-print">
     <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-100 p-5 animate-fade text-center">
@@ -1525,7 +1769,8 @@ service cloud.firestore {
               jenisKelamin: d.jenisKelamin || inferGenderByName(d.namaSiswa, ''),
               tahunAjaran: d.tahunAjaran || '2025-2026',
               statusPengisian: d.statusPengisian || (d.respon ? 'Sudah Mengisi' : 'Belum Mengisi'),
-              respon: d.respon || null
+              respon: d.respon || null,
+              fotoUrl: d.fotoUrl || null
             });
           });
 
@@ -1571,7 +1816,8 @@ service cloud.firestore {
             jenisKelamin: d.jenisKelamin || inferGenderByName(d.namaSiswa, ''),
             tahunAjaran: d.tahunAjaran || '2025-2026',
             statusPengisian: d.statusPengisian || (d.respon ? 'Sudah Mengisi' : 'Belum Mengisi'),
-            respon: d.respon || null
+            respon: d.respon || null,
+            fotoUrl: d.fotoUrl || null
           });
         });
         if (loaded.length > 0) {
@@ -1620,7 +1866,7 @@ service cloud.firestore {
         });
       },
 
-      async addStudent(namaSiswa, tahunAjaran, jenisKelamin) {
+      async addStudent(namaSiswa, tahunAjaran, jenisKelamin, fotoUrl = null) {
         if (!this.db) throw new Error("Firebase belum terhubung.");
         const newId = "SIS-" + Date.now().toString().slice(-6);
         const newStudent = {
@@ -1630,6 +1876,7 @@ service cloud.firestore {
           jenisKelamin: jenisKelamin || "L",
           statusPengisian: "Belum Mengisi",
           respon: null,
+          fotoUrl: fotoUrl || null,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         await this.db.collection('students').doc(newId).set(newStudent);
@@ -1645,12 +1892,23 @@ service cloud.firestore {
           jenisKelamin: String(payload.jenisKelamin || "L").trim(),
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
+        if ('fotoUrl' in payload) {
+          updateData.fotoUrl = payload.fotoUrl || null;
+        }
         const student = appState.students.find(s => s.idSiswa === idSiswa);
         if (student && student.respon) {
           updateData['respon.namaSiswa'] = updateData.namaSiswa;
           updateData['respon.tahunAjaran'] = updateData.tahunAjaran;
         }
         await this.db.collection('students').doc(idSiswa).update(updateData);
+      },
+
+      async updateStudentPhoto(idSiswa, fotoUrl) {
+        if (!this.db) throw new Error("Firebase belum terhubung.");
+        await this.db.collection('students').doc(idSiswa).update({
+          fotoUrl: fotoUrl || null,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
       },
 
       async deleteStudent(idSiswa) {
@@ -2851,19 +3109,54 @@ service cloud.firestore {
       const badge = document.getElementById('formModeBadge');
       const isAdmin = appState.currentUser && appState.currentUser.role === 'admin';
 
+      const cardPreview = document.getElementById('studentCardPreview');
+      const photoImg = document.getElementById('formStudentPhotoPreview');
+      const photoPlaceholder = document.getElementById('formStudentPhotoPlaceholder');
+      const namePreview = document.getElementById('formStudentNamePreview');
+      const genderBadge = document.getElementById('formStudentGenderBadge');
+      const subPreview = document.getElementById('formStudentSubPreview');
+
       if (!idSiswa) {
         alertBox.classList.add('hidden');
+        if (cardPreview) {
+          cardPreview.classList.add('hidden');
+          cardPreview.classList.remove('flex');
+        }
         badge.textContent = "Input Baru";
         badge.className = "bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-1 rounded-lg";
         return;
       }
 
       const student = appState.students.find(s => s.idSiswa === idSiswa);
+      if (student && cardPreview) {
+        const jk = inferGenderByName(student.namaSiswa, student.jenisKelamin);
+        if (namePreview) namePreview.textContent = student.namaSiswa;
+        if (genderBadge) {
+          genderBadge.textContent = jk === 'L' ? 'Laki-laki' : 'Perempuan';
+          genderBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded-md ${jk === 'L' ? 'bg-sky-100 text-sky-700' : 'bg-pink-100 text-pink-700'}`;
+        }
+        if (subPreview) subPreview.textContent = `ID: ${student.idSiswa} • TA: ${student.tahunAjaran || '2025-2026'}`;
+        
+        if (student.fotoUrl) {
+          if (photoImg) { photoImg.src = student.fotoUrl; photoImg.classList.remove('hidden'); }
+          if (photoPlaceholder) photoPlaceholder.classList.add('hidden');
+        } else {
+          if (photoImg) { photoImg.src = ''; photoImg.classList.add('hidden'); }
+          if (photoPlaceholder) photoPlaceholder.classList.remove('hidden');
+        }
+        cardPreview.classList.remove('hidden');
+        cardPreview.classList.add('flex');
+      }
+
       if (student && student.statusPengisian === "Sudah Mengisi" && student.respon) {
         if (!isAdmin) {
           showToast("Nama siswa ini sudah mengisi dan terkunci!", "error");
           document.getElementById('selectSiswa').value = "";
           alertBox.classList.add('hidden');
+          if (cardPreview) {
+            cardPreview.classList.add('hidden');
+            cardPreview.classList.remove('flex');
+          }
           return;
         }
 
@@ -2920,6 +3213,11 @@ service cloud.firestore {
       document.getElementById('alumniForm').reset();
       document.getElementById('selectSiswa').value = '';
       document.getElementById('studentExistingAlert').classList.add('hidden');
+      const cardPreview = document.getElementById('studentCardPreview');
+      if (cardPreview) {
+        cardPreview.classList.add('hidden');
+        cardPreview.classList.remove('flex');
+      }
       document.getElementById('formModeBadge').textContent = "Input Baru";
     }
 
@@ -2978,7 +3276,8 @@ service cloud.firestore {
             }
             renderAllViews();
             resetForm();
-            showToast(`Data ${payload.namaSiswa} berhasil disimpan ke Firestore!`, "success");
+            openSaveSuccessModal(payload);
+            showToast(`Alhamdulillah! Data ${payload.namaSiswa} berhasil disimpan ke Firestore!`, "success");
           })
           .catch(err => {
             btn.disabled = false;
@@ -3000,7 +3299,8 @@ service cloud.firestore {
           btn.innerHTML = originalHtml;
           renderAllViews();
           resetForm();
-          showToast(`Data ${payload.namaSiswa} berhasil disimpan!`, "success");
+          openSaveSuccessModal(payload);
+          showToast(`Alhamdulillah! Data ${payload.namaSiswa} berhasil disimpan!`, "success");
         }, 400);
         return;
       }
@@ -3013,6 +3313,7 @@ service cloud.firestore {
             appState.students = res.students;
             renderAllViews();
             resetForm();
+            openSaveSuccessModal(payload);
             showToast(res.message || "Berhasil!", "success");
           } else {
             showToast(res ? res.message : "Gagal", "error");
@@ -3051,6 +3352,17 @@ service cloud.firestore {
         const nomorUrut = activeStudents.findIndex(item => item.idSiswa === s.idSiswa) + 1;
         const jk = inferGenderByName(s.namaSiswa, s.jenisKelamin);
         const jkBadge = jk === 'L' ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700">L</span>` : `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-pink-100 text-pink-700">P</span>`;
+        const isAdmin = appState.currentUser && appState.currentUser.role === 'admin';
+
+        const photoHtml = `
+          <div class="relative shrink-0">
+            ${s.fotoUrl ? 
+              `<img src="${s.fotoUrl}" class="w-10 h-10 rounded-xl object-cover border-2 border-emerald-400 shadow-xs" alt="${s.namaSiswa}">` : 
+              `<div class="w-10 h-10 rounded-xl ${isFilled ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'} font-bold text-xs flex items-center justify-center">${nomorUrut}</div>`
+            }
+            ${s.fotoUrl ? `<span class="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-md bg-slate-800 text-white text-[10px] font-bold flex items-center justify-center shadow">${nomorUrut}</span>` : ''}
+          </div>
+        `;
 
         if (isFilled) {
           const r = s.respon;
@@ -3058,39 +3370,57 @@ service cloud.firestore {
             <div class="rounded-2xl border border-emerald-200 bg-emerald-50/30 p-4 flex flex-col justify-between">
               <div>
                 <div class="flex items-start justify-between gap-2">
-                  <div class="flex items-center gap-2">
-                    <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0">${nomorUrut}</span>
-                    <div>
-                      <h4 class="font-bold text-slate-800 text-sm inline">${s.namaSiswa}</h4> ${jkBadge}
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    ${photoHtml}
+                    <div class="min-w-0">
+                      <h4 class="font-bold text-slate-800 text-sm truncate">${s.namaSiswa}</h4>
+                      <div class="flex items-center gap-1.5 mt-0.5">
+                        ${jkBadge}
+                        <span class="text-[10px] text-slate-400 font-mono">${s.idSiswa}</span>
+                      </div>
                     </div>
                   </div>
-                  <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fas fa-lock text-[9px]"></i> Terkunci</span>
+                  <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"><i class="fas fa-lock text-[9px]"></i> Terkunci</span>
                 </div>
                 <div class="mt-3 pt-3 border-t border-emerald-200/60 space-y-1 text-xs">
                   <span class="px-2 py-0.5 rounded font-bold text-[11px] bg-emerald-100 text-emerald-800">${r.jenjangTujuan} (${r.statusSekolah})</span>
-                  <p class="font-bold text-slate-800 text-sm">${r.namaSekolah}</p>
+                  <p class="font-bold text-slate-800 text-sm truncate">${r.namaSekolah}</p>
                 </div>
               </div>
               <div class="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
                 <span class="text-slate-400">Update</span>
-                ${(appState.currentUser && appState.currentUser.role === 'admin') ? `<button onclick="selectStudentFromList('${s.idSiswa}')" class="text-emerald-700 font-semibold"><i class="fas fa-pen"></i> Edit Admin</button>` : `<span class="text-slate-400">Tersimpan</span>`}
+                ${isAdmin ? `
+                  <div class="flex items-center gap-2">
+                    <button onclick="openQuickUploadPhoto('${s.idSiswa}')" class="text-emerald-700 hover:text-emerald-900 font-semibold cursor-pointer" title="Kelola Foto Siswa"><i class="fas fa-camera"></i> Foto</button>
+                    <button onclick="selectStudentFromList('${s.idSiswa}')" class="text-emerald-700 hover:text-emerald-900 font-semibold cursor-pointer"><i class="fas fa-pen"></i> Edit</button>
+                  </div>
+                ` : `<span class="text-slate-400">Tersimpan</span>`}
               </div>
             </div>
           `;
         } else {
           return `
             <div class="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col justify-between">
-              <div class="flex items-start justify-between gap-2">
-                <div class="flex items-center gap-2">
-                  <span class="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0">${nomorUrut}</span>
-                  <div>
-                    <h4 class="font-bold text-slate-800 text-sm inline">${s.namaSiswa}</h4> ${jkBadge}
+              <div>
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    ${photoHtml}
+                    <div class="min-w-0">
+                      <h4 class="font-bold text-slate-800 text-sm truncate">${s.namaSiswa}</h4>
+                      <div class="flex items-center gap-1.5 mt-0.5">
+                        ${jkBadge}
+                        <span class="text-[10px] text-slate-400 font-mono">${s.idSiswa}</span>
+                      </div>
+                    </div>
                   </div>
+                  <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">Belum</span>
                 </div>
-                <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Belum</span>
+                <p class="text-xs text-slate-400 my-3 italic">Belum ada data sekolah lanjutan.</p>
               </div>
-              <p class="text-xs text-slate-400 my-3 italic">Belum ada data sekolah lanjutan.</p>
-              ${isFormLockedByDeadline() ? `<button disabled class="w-full py-2 rounded-xl bg-slate-100 text-slate-400 text-xs">Waktu Habis</button>` : `<button onclick="selectStudentFromList('${s.idSiswa}')" class="w-full py-2 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-semibold text-xs border border-emerald-200 transition">Isi Data Siswa Ini</button>`}
+              <div class="mt-2 flex items-center gap-2">
+                ${isFormLockedByDeadline() ? `<button disabled class="w-full py-2 rounded-xl bg-slate-100 text-slate-400 text-xs">Waktu Habis</button>` : `<button onclick="selectStudentFromList('${s.idSiswa}')" class="flex-1 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-semibold text-xs border border-emerald-200 transition cursor-pointer">Isi Data Siswa Ini</button>`}
+                ${isAdmin ? `<button onclick="openQuickUploadPhoto('${s.idSiswa}')" title="Upload Foto Siswa" class="p-2 rounded-xl bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-700 border border-slate-200 transition cursor-pointer"><i class="fas fa-camera"></i></button>` : ''}
+              </div>
             </div>
           `;
         }
@@ -3354,7 +3684,15 @@ service cloud.firestore {
         return `
           <tr class="hover:bg-slate-50 transition">
             <td class="py-3 px-3 text-center text-slate-500">${idx + 1}</td>
-            <td class="py-3 px-4 font-bold text-slate-800">${s.namaSiswa}</td>
+            <td class="py-2.5 px-4 font-bold text-slate-800">
+              <div class="flex items-center gap-2.5">
+                ${s.fotoUrl ? 
+                  `<img src="${s.fotoUrl}" class="w-8 h-8 rounded-lg object-cover border border-emerald-400 shrink-0 shadow-xs" alt="">` : 
+                  `<div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center shrink-0 text-xs"><i class="fas fa-user"></i></div>`
+                }
+                <span class="truncate">${s.namaSiswa}</span>
+              </div>
+            </td>
             <td class="py-3 px-2 text-center">
               <span class="px-2 py-0.5 rounded text-[11px] font-bold ${jk === 'L' ? 'bg-sky-100 text-sky-700' : 'bg-pink-100 text-pink-700'}">${jk}</span>
             </td>
@@ -3368,6 +3706,9 @@ service cloud.firestore {
             <td class="py-3 px-3 text-center text-slate-400 text-xs">${r.waktuInput || '-'}</td>
             <td class="py-3 px-3 text-center no-print">
               <div class="flex items-center justify-center gap-1.5">
+                <button onclick="openQuickUploadPhoto('${s.idSiswa}')" title="Unggah / Ubah Pas Foto Siswa" class="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-emerald-600 hover:text-white transition">
+                  <i class="fas fa-camera"></i>
+                </button>
                 <button onclick="selectStudentFromList('${s.idSiswa}')" title="Edit Respons Siswa" class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition">
                   <i class="fas fa-pen-to-square"></i>
                 </button>
@@ -3397,7 +3738,7 @@ service cloud.firestore {
       });
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-10 text-center text-slate-400 text-xs">Belum ada master siswa untuk Tahun Ajaran ini. Silakan klik "Tambah Siswa Baru" atau "Impor Siswa Massal".</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="py-10 text-center text-slate-400 text-xs">Belum ada master siswa untuk Tahun Ajaran ini. Silakan klik "Tambah Siswa Baru" atau "Impor Siswa Massal".</td></tr>`;
         return;
       }
 
@@ -3409,6 +3750,15 @@ service cloud.firestore {
         return `
           <tr class="hover:bg-slate-50 transition">
             <td class="py-3 px-3 text-center text-slate-500">${idx + 1}</td>
+            <td class="py-2.5 px-3 text-center">
+              <button type="button" onclick="openQuickUploadPhoto('${s.idSiswa}')" title="Klik untuk upload / kelola pas foto siswa" class="relative inline-block group cursor-pointer focus:outline-none">
+                ${s.fotoUrl ? 
+                  `<img src="${s.fotoUrl}" class="w-9 h-9 rounded-xl object-cover border-2 border-emerald-400 shadow-xs mx-auto group-hover:scale-105 transition" alt="${s.namaSiswa}">` : 
+                  `<div class="w-9 h-9 rounded-xl bg-slate-100 group-hover:bg-emerald-50 text-slate-400 group-hover:text-emerald-600 border border-dashed border-slate-300 group-hover:border-emerald-400 flex items-center justify-center mx-auto transition"><i class="fas fa-camera text-xs"></i></div>`
+                }
+                <span class="absolute -bottom-1 -right-1 bg-slate-800 text-white rounded-full text-[8px] flex items-center justify-center w-3.5 h-3.5 shadow group-hover:bg-emerald-600 transition"><i class="fas fa-camera"></i></span>
+              </button>
+            </td>
             <td class="py-3 px-3 text-xs font-mono font-medium text-slate-500">${s.idSiswa}</td>
             <td class="py-3 px-4 font-bold text-slate-800">${s.namaSiswa}</td>
             <td class="py-3 px-2 text-center">
@@ -3420,6 +3770,9 @@ service cloud.firestore {
             </td>
             <td class="py-3 px-3 text-center no-print">
               <div class="flex items-center justify-center gap-1.5">
+                <button onclick="openQuickUploadPhoto('${s.idSiswa}')" title="Upload Pas Foto Siswa (Admin)" class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition">
+                  <i class="fas fa-camera"></i>
+                </button>
                 <button onclick="openEditStudentModal('${s.idSiswa}')" title="Edit Master Siswa" class="p-1.5 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-600 hover:text-white transition">
                   <i class="fas fa-user-pen"></i>
                 </button>
@@ -3903,8 +4256,99 @@ service cloud.firestore {
     }
 
     // ========================================================
-    // MASTER STUDENT MODAL HANDLERS
+    // CLIENT-SIDE IMAGE COMPRESSION HELPER (CANVAS)
     // ========================================================
+    function compressImageFile(file, maxWidth = 320, maxHeight = 320, quality = 0.82) {
+      return new Promise((resolve, reject) => {
+        if (!file || !file.type.startsWith('image/')) {
+          return reject(new Error('Format berkas harus berupa gambar (JPG/PNG).'));
+        }
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Gagal membaca berkas gambar.'));
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('Gagal memproses gambar. Format mungkin tidak didukung.'));
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+            } else {
+              if (height > maxHeight) {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(dataUrl);
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // ========================================================
+    // MASTER STUDENT MODAL HANDLERS (ADMIN ONLY)
+    // ========================================================
+
+    function handleStudentPhotoSelected(e) {
+      if (!appState.currentUser || appState.currentUser.role !== 'admin') {
+        showToast("Akses ditolak: Hanya Admin yang berhak mengunggah foto siswa!", "error");
+        return;
+      }
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast("Format berkas harus berupa gambar!", "error");
+        return;
+      }
+
+      compressImageFile(file, 320, 320, 0.82)
+        .then(compressedData => {
+          document.getElementById('editStudentPhotoData').value = compressedData;
+          const photoImg = document.getElementById('studentPhotoImg');
+          const placeholder = document.getElementById('studentPhotoPlaceholderIcon');
+          const btnRemove = document.getElementById('btnRemoveStudentPhoto');
+          if (photoImg) { photoImg.src = compressedData; photoImg.classList.remove('hidden'); }
+          if (placeholder) placeholder.classList.add('hidden');
+          if (btnRemove) btnRemove.classList.remove('hidden');
+          showToast("Foto berhasil dimuat. Klik Simpan untuk memperbarui.", "info");
+        })
+        .catch(err => {
+          showToast("Gagal memproses gambar: " + err.message, "error");
+        });
+    }
+
+    function removeSelectedStudentPhoto() {
+      if (!appState.currentUser || appState.currentUser.role !== 'admin') {
+        showToast("Hanya Admin yang berhak menghapus foto siswa!", "error");
+        return;
+      }
+      document.getElementById('editStudentPhotoData').value = '';
+      const fileInput = document.getElementById('newStudentPhotoInput');
+      if (fileInput) fileInput.value = '';
+      const photoImg = document.getElementById('studentPhotoImg');
+      const placeholder = document.getElementById('studentPhotoPlaceholderIcon');
+      const btnRemove = document.getElementById('btnRemoveStudentPhoto');
+      if (photoImg) { photoImg.src = ''; photoImg.classList.add('hidden'); }
+      if (placeholder) placeholder.classList.remove('hidden');
+      if (btnRemove) btnRemove.classList.add('hidden');
+    }
 
     function openAddStudentModal() {
       if (!appState.currentUser || appState.currentUser.role !== 'admin') {
@@ -3913,6 +4357,17 @@ service cloud.firestore {
       }
       const activeTa = (appState.settings && appState.settings.activeTahunAjaran) ? appState.settings.activeTahunAjaran : "2025-2026";
       document.getElementById('editIdSiswa').value = '';
+      document.getElementById('editStudentPhotoData').value = '';
+      const fileInput = document.getElementById('newStudentPhotoInput');
+      if (fileInput) fileInput.value = '';
+
+      const photoImg = document.getElementById('studentPhotoImg');
+      const placeholder = document.getElementById('studentPhotoPlaceholderIcon');
+      const btnRemove = document.getElementById('btnRemoveStudentPhoto');
+      if (photoImg) { photoImg.src = ''; photoImg.classList.add('hidden'); }
+      if (placeholder) placeholder.classList.remove('hidden');
+      if (btnRemove) btnRemove.classList.add('hidden');
+
       document.getElementById('newStudentName').value = '';
       document.getElementById('newStudentGender').value = 'L';
       document.getElementById('newStudentTa').value = activeTa;
@@ -3939,6 +4394,25 @@ service cloud.firestore {
       document.getElementById('newStudentTa').value = student.tahunAjaran || (appState.settings.activeTahunAjaran || '2025-2026');
       document.getElementById('btnSaveMasterStudent').textContent = 'Perbarui Siswa';
 
+      const photoData = document.getElementById('editStudentPhotoData');
+      const photoImg = document.getElementById('studentPhotoImg');
+      const placeholder = document.getElementById('studentPhotoPlaceholderIcon');
+      const btnRemove = document.getElementById('btnRemoveStudentPhoto');
+      const fileInput = document.getElementById('newStudentPhotoInput');
+      if (fileInput) fileInput.value = '';
+
+      if (student.fotoUrl) {
+        if (photoData) photoData.value = student.fotoUrl;
+        if (photoImg) { photoImg.src = student.fotoUrl; photoImg.classList.remove('hidden'); }
+        if (placeholder) placeholder.classList.add('hidden');
+        if (btnRemove) btnRemove.classList.remove('hidden');
+      } else {
+        if (photoData) photoData.value = '';
+        if (photoImg) { photoImg.src = ''; photoImg.classList.add('hidden'); }
+        if (placeholder) placeholder.classList.remove('hidden');
+        if (btnRemove) btnRemove.classList.add('hidden');
+      }
+
       const modal = document.getElementById('addStudentModal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -3952,27 +4426,38 @@ service cloud.firestore {
 
     function submitMasterStudent(e) {
       e.preventDefault();
+      if (!appState.currentUser || appState.currentUser.role !== 'admin') {
+        showToast("Akses ditolak: Hanya Admin yang berhak menyimpan data siswa!", "error");
+        return;
+      }
+
       const idSiswa = document.getElementById('editIdSiswa').value;
       const nama = document.getElementById('newStudentName').value.trim().toUpperCase();
       const jk = document.getElementById('newStudentGender').value;
       const ta = document.getElementById('newStudentTa').value.trim();
+      const fotoUrl = document.getElementById('editStudentPhotoData').value || null;
       if (!nama) return;
 
       const isEditing = Boolean(idSiswa);
 
       if (firebaseDb && firebaseDb.isInitialized) {
         if (isEditing) {
-          firebaseDb.updateStudent({ idSiswa, namaSiswa: nama, tahunAjaran: ta, jenisKelamin: jk })
+          firebaseDb.updateStudent({ idSiswa, namaSiswa: nama, tahunAjaran: ta, jenisKelamin: jk, fotoUrl })
             .then(() => {
               closeAddStudentModal();
               const st = appState.students.find(s => s.idSiswa === idSiswa);
-              if (st) { st.namaSiswa = nama; st.jenisKelamin = jk; st.tahunAjaran = ta; }
+              if (st) {
+                st.namaSiswa = nama;
+                st.jenisKelamin = jk;
+                st.tahunAjaran = ta;
+                st.fotoUrl = fotoUrl;
+              }
               renderAllViews();
               showToast(`Data siswa ${nama} diperbarui di Firestore!`, "success");
             })
             .catch(err => showToast("Gagal update di Firestore: " + err.message, "error"));
         } else {
-          firebaseDb.addStudent(nama, ta, jk)
+          firebaseDb.addStudent(nama, ta, jk, fotoUrl)
             .then((newStudent) => {
               closeAddStudentModal();
               if (!appState.students.some(s => s.idSiswa === newStudent.idSiswa)) {
@@ -3990,10 +4475,23 @@ service cloud.firestore {
       if (IS_PREVIEW || !isGasEnv) {
         if (isEditing) {
           const st = appState.students.find(s => s.idSiswa === idSiswa);
-          if (st) { st.namaSiswa = nama; st.jenisKelamin = jk; st.tahunAjaran = ta; }
+          if (st) {
+            st.namaSiswa = nama;
+            st.jenisKelamin = jk;
+            st.tahunAjaran = ta;
+            st.fotoUrl = fotoUrl;
+          }
         } else {
           const newId = "SIS-" + new Date().getTime().toString().slice(-6);
-          appState.students.push({ idSiswa: newId, namaSiswa: nama, jenisKelamin: jk, tahunAjaran: ta, statusPengisian: "Belum Mengisi", respon: null });
+          appState.students.push({
+            idSiswa: newId,
+            namaSiswa: nama,
+            jenisKelamin: jk,
+            tahunAjaran: ta,
+            statusPengisian: "Belum Mengisi",
+            respon: null,
+            fotoUrl: fotoUrl
+          });
         }
         closeAddStudentModal();
         renderAllViews();
@@ -4023,6 +4521,146 @@ service cloud.firestore {
             } else { showToast(res ? res.message : "Gagal", "error"); }
           })
           .addMasterStudent(nama, ta, jk);
+      }
+    }
+
+    // ========================================================
+    // QUICK UPLOAD STUDENT PHOTO MODAL (ADMIN ONLY)
+    // ========================================================
+
+    function openQuickUploadPhoto(idSiswa) {
+      if (!appState.currentUser || appState.currentUser.role !== 'admin') {
+        showToast("Akses ditolak: Hanya Administrator yang berhak mengunggah foto siswa!", "error");
+        return;
+      }
+
+      const student = appState.students.find(s => s.idSiswa === idSiswa);
+      if (!student) {
+        showToast("Data siswa tidak ditemukan!", "error");
+        return;
+      }
+
+      document.getElementById('quickPhotoTargetId').value = student.idSiswa;
+      document.getElementById('quickPhotoStudentName').textContent = student.namaSiswa;
+      document.getElementById('quickPhotoStudentId').textContent = `${student.idSiswa} | TA: ${student.tahunAjaran || '2025-2026'}`;
+      
+      const fileInput = document.getElementById('quickPhotoFileInput');
+      if (fileInput) fileInput.value = '';
+
+      const photoImg = document.getElementById('quickPhotoImg');
+      const placeholderIcon = document.getElementById('quickPhotoIcon');
+      const btnDelete = document.getElementById('btnQuickDeletePhoto');
+      const photoData = document.getElementById('quickPhotoData');
+
+      if (student.fotoUrl) {
+        photoData.value = student.fotoUrl;
+        photoImg.src = student.fotoUrl;
+        photoImg.classList.remove('hidden');
+        placeholderIcon.classList.add('hidden');
+        btnDelete.classList.remove('hidden');
+      } else {
+        photoData.value = '';
+        photoImg.src = '';
+        photoImg.classList.add('hidden');
+        placeholderIcon.classList.remove('hidden');
+        btnDelete.classList.add('hidden');
+      }
+
+      const modal = document.getElementById('modalQuickUploadPhoto');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeQuickUploadPhoto() {
+      const modal = document.getElementById('modalQuickUploadPhoto');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function handleQuickPhotoFileChange(e) {
+      if (!appState.currentUser || appState.currentUser.role !== 'admin') {
+        showToast("Akses ditolak: Hanya Administrator yang berhak mengunggah foto!", "error");
+        return;
+      }
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast("Pilih berkas gambar yang valid (JPG/PNG)!", "error");
+        return;
+      }
+
+      compressImageFile(file, 320, 320, 0.82)
+        .then(compressedData => {
+          document.getElementById('quickPhotoData').value = compressedData;
+          const photoImg = document.getElementById('quickPhotoImg');
+          const placeholderIcon = document.getElementById('quickPhotoIcon');
+          const btnDelete = document.getElementById('btnQuickDeletePhoto');
+
+          photoImg.src = compressedData;
+          photoImg.classList.remove('hidden');
+          placeholderIcon.classList.add('hidden');
+          btnDelete.classList.remove('hidden');
+          showToast("Foto berhasil dimuat. Klik 'Simpan' untuk menyimpan permanen.", "info");
+        })
+        .catch(err => {
+          showToast("Gagal memproses gambar: " + err.message, "error");
+        });
+    }
+
+    function handleQuickPhotoDelete() {
+      if (!appState.currentUser || appState.currentUser.role !== 'admin') {
+        showToast("Hanya Admin yang berhak menghapus foto siswa!", "error");
+        return;
+      }
+      document.getElementById('quickPhotoData').value = '';
+      const fileInput = document.getElementById('quickPhotoFileInput');
+      if (fileInput) fileInput.value = '';
+
+      const photoImg = document.getElementById('quickPhotoImg');
+      const placeholderIcon = document.getElementById('quickPhotoIcon');
+      const btnDelete = document.getElementById('btnQuickDeletePhoto');
+
+      photoImg.src = '';
+      photoImg.classList.add('hidden');
+      placeholderIcon.classList.remove('hidden');
+      btnDelete.classList.add('hidden');
+      showToast("Foto dikosongkan. Klik 'Simpan' untuk menerapkan perubahan.", "info");
+    }
+
+    async function saveQuickPhoto() {
+      if (!appState.currentUser || appState.currentUser.role !== 'admin') {
+        showToast("Akses ditolak: Hanya Administrator yang berhak menyimpan foto siswa!", "error");
+        return;
+      }
+
+      const idSiswa = document.getElementById('quickPhotoTargetId').value;
+      const fotoUrl = document.getElementById('quickPhotoData').value || null;
+      if (!idSiswa) return;
+
+      const btn = document.getElementById('btnSaveQuickPhoto');
+      const origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Menyimpan...`;
+
+      try {
+        if (firebaseDb && firebaseDb.isInitialized) {
+          await firebaseDb.updateStudentPhoto(idSiswa, fotoUrl);
+        }
+
+        const student = appState.students.find(s => s.idSiswa === idSiswa);
+        if (student) {
+          student.fotoUrl = fotoUrl;
+        }
+
+        renderAllViews();
+        closeQuickUploadPhoto();
+        showToast(fotoUrl ? "Foto siswa berhasil disimpan di database!" : "Foto siswa berhasil dihapus!", "success");
+      } catch (err) {
+        showToast("Gagal menyimpan foto: " + err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
       }
     }
 
@@ -4156,6 +4794,171 @@ service cloud.firestore {
       });
     }
 
+    /**
+     * ========================================================================
+     * ANIMASI & MODAL SUKSES SIMPAN (WALI MURID / SISWA)
+     * ========================================================================
+     */
+    let lastSavedStudentPayload = null;
+    let confettiAnimId = null;
+
+    function playSuccessChime() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        // Melodi kord ceria kemenangan: C5, E5, G5, C6 (Do, Mi, Sol, Do tinggi)
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          const start = ctx.currentTime + (idx * 0.08);
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.2, start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.5);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.55);
+        });
+      } catch (e) {
+        // Audio tidak diizinkan atau tidak didukung
+      }
+    }
+
+    function runConfettiCelebration() {
+      const canvas = document.getElementById('confettiCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const colors = ['#10b981', '#059669', '#34d399', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#14b8a6'];
+      const particles = [];
+      const count = 90;
+
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: canvas.width * 0.5 + (Math.random() - 0.5) * 350,
+          y: canvas.height * 0.4 + (Math.random() - 0.5) * 120,
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 1.3) * 16,
+          size: Math.random() * 8 + 6,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 12,
+          gravity: 0.38,
+          opacity: 1
+        });
+      }
+
+      const startTime = performance.now();
+      const duration = 3200;
+
+      function renderFrame(now) {
+        const elapsed = now - startTime;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+          p.rotation += p.rotationSpeed;
+          p.opacity = Math.max(0, 1 - (elapsed / duration));
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = p.opacity;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.65);
+          ctx.restore();
+        });
+
+        if (elapsed < duration) {
+          confettiAnimId = requestAnimationFrame(renderFrame);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+        }
+      }
+
+      if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+      confettiAnimId = requestAnimationFrame(renderFrame);
+    }
+
+    function openSaveSuccessModal(data) {
+      lastSavedStudentPayload = data;
+      const modal = document.getElementById('saveSuccessModal');
+      if (!modal) return;
+
+      const elNama = document.getElementById('successModalNama');
+      if (elNama) elNama.textContent = data.namaSiswa || '-';
+
+      const elTa = document.getElementById('successModalTaBadge');
+      if (elTa) elTa.textContent = `TA ${data.tahunAjaran || '2025-2026'}`;
+
+      const elJenjang = document.getElementById('successModalJenjang');
+      if (elJenjang) {
+        const iconJenjang = (data.jenjangTujuan === 'SMP') ? 'fa-school' : (data.jenjangTujuan === 'MTs' ? 'fa-mosque' : 'fa-book-quran');
+        elJenjang.innerHTML = `<i class="fas ${iconJenjang} text-emerald-600"></i> ${data.jenjangTujuan || '-'} (${data.statusSekolah || '-'})`;
+      }
+
+      const elSekolah = document.getElementById('successModalSekolah');
+      if (elSekolah) {
+        elSekolah.innerHTML = `<i class="fas fa-location-dot text-emerald-600 mt-0.5 shrink-0"></i> <span class="leading-snug">${data.namaSekolah || '-'}</span>`;
+      }
+
+      const elWaktu = document.getElementById('successModalWaktu');
+      if (elWaktu) {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        elWaktu.textContent = `${dateStr}, ${timeStr} WITA`;
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      // Mainkan efek audio kord kemenangan & animasi pesta konfeti
+      playSuccessChime();
+      runConfettiCelebration();
+    }
+
+    function closeSaveSuccessModal() {
+      const modal = document.getElementById('saveSuccessModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      const canvas = document.getElementById('confettiCanvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+    }
+
+    function handleSuccessModalLihatStatus() {
+      const studentName = (lastSavedStudentPayload && lastSavedStudentPayload.namaSiswa) ? lastSavedStudentPayload.namaSiswa : '';
+      closeSaveSuccessModal();
+      switchTab('daftar');
+      const searchInput = document.getElementById('filterDaftarSearch');
+      if (searchInput && studentName) {
+        searchInput.value = studentName;
+        renderStudentListTab();
+      }
+      const viewDaftar = document.getElementById('view-daftar');
+      if (viewDaftar) {
+        viewDaftar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
     function handleMobileAdminClick() {
       if (!appState.currentUser || appState.currentUser.role !== 'admin') openLoginModal();
       else showAdminPortal();
@@ -4261,19 +5064,93 @@ service cloud.firestore {
       }
     }
 
+    function playLogoutSound() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        // Melodi not menurun penutup sesi: G5 -> E5 -> C5 -> G4
+        const notes = [783.99, 659.25, 523.25, 392.00];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          const start = ctx.currentTime + (idx * 0.08);
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.16, start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.4);
+        });
+      } catch (e) {}
+    }
+
     function handleLogout() {
-      appState.currentUser = null;
-      document.getElementById('activeRoleText').textContent = "Mode Publik / Wali Siswa";
-      document.getElementById('btnOpenLogin').classList.remove('hidden');
-      document.getElementById('btnLogout').classList.add('hidden');
+      const overlay = document.getElementById('logoutOverlay');
+      const progressBar = document.getElementById('logoutProgressBar');
+      const lockIcon = document.getElementById('logoutLockIcon');
 
-      const btnGoto = document.getElementById('btnGotoAdminPanel');
-      if (btnGoto) btnGoto.classList.add('hidden');
+      if (!overlay) {
+        appState.currentUser = null;
+        document.getElementById('activeRoleText').textContent = "Mode Publik / Wali Siswa";
+        document.getElementById('btnOpenLogin').classList.remove('hidden');
+        document.getElementById('btnLogout').classList.add('hidden');
+        const btnGoto = document.getElementById('btnGotoAdminPanel');
+        if (btnGoto) btnGoto.classList.add('hidden');
+        resetForm();
+        showPublicPortal();
+        renderAllViews();
+        showToast("Berhasil Keluar dari Mode Admin.", "info");
+        return;
+      }
 
-      resetForm();
-      showPublicPortal();
-      renderAllViews();
-      showToast("Berhasil Keluar.", "info");
+      // 1. Tampilkan overlay animasi dengan efek fade-in
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      overlay.style.opacity = '0';
+      setTimeout(() => { overlay.style.opacity = '1'; }, 10);
+
+      // 2. Mainkan efek audio logout dan animasi gembok terkunci
+      playLogoutSound();
+
+      if (progressBar) progressBar.style.width = '0%';
+      setTimeout(() => {
+        if (progressBar) progressBar.style.width = '100%';
+        if (lockIcon) {
+          lockIcon.style.transform = 'scale(1.25) rotate(-12deg)';
+          setTimeout(() => { lockIcon.style.transform = 'scale(1) rotate(0deg)'; }, 280);
+        }
+      }, 50);
+
+      // 3. Setelah animasi berlangsung (1.1 detik), selesaikan proses logout
+      setTimeout(() => {
+        appState.currentUser = null;
+        document.getElementById('activeRoleText').textContent = "Mode Publik / Wali Siswa";
+        document.getElementById('btnOpenLogin').classList.remove('hidden');
+        document.getElementById('btnLogout').classList.add('hidden');
+
+        const btnGoto = document.getElementById('btnGotoAdminPanel');
+        if (btnGoto) btnGoto.classList.add('hidden');
+
+        resetForm();
+        showPublicPortal();
+        renderAllViews();
+
+        // Fade out overlay dengan halus
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+          overlay.classList.remove('flex');
+          if (progressBar) progressBar.style.width = '0%';
+          showToast("Akses Administrator telah dikunci. Kembali ke Mode Publik.", "info");
+        }, 300);
+      }, 1100);
     }
 
     function showToast(msg, type = 'success') {
